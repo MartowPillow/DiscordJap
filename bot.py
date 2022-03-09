@@ -8,7 +8,7 @@ from discord.ext import commands
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
-TOKEN = "OTUwMzg4MDA2OTExNjIzMjM4.YiYLzg.X9v7HEC4haft6JFe3mjfLYel-6Q"
+TOKEN = "secret"
 GUILD1 = "TestBot"
 GUILD2 = "COOOOO"
 
@@ -43,29 +43,53 @@ async def fetch(context, urltxt = "https://api.thecatapi.com/v1/images/search"):
         data = json.loads(url.read().decode())
         await context.send(data)
 
-waiting = "none"
+kana_url = "https://localhost:7113/api/Kana"
+url = urllib.request.urlopen(kana_url)
+kanas = json.loads(url.read().decode())
+
+user_queue = []
+res_queue = []
+scores = []
+high_scores = []
 
 @bot.command(name="kana",help="ask random kana signification")
 async def kana(context):
-    kana_url = "https://localhost:7113/api/Kana"
-    global waiting
-    with urllib.request.urlopen(kana_url) as url:
-        kanas = json.loads(url.read().decode())
-        curr = random.choice(kanas)
-        waiting = [context.message.author, curr["romaji"]]
-        await context.send("what is " + curr["character"] + " ?")
+    curr = random.choice(kanas)
+    if(context.message.author in user_queue):
+        i = 0
+        while (user_queue[i] != context.message.author) :
+            i = i + 1
+        res_queue[i] = curr["romaji"]
+    else:
+        user_queue.append(context.message.author)
+        res_queue.append(curr["romaji"])
+        scores.append(0)
+        high_scores.append(0)
+    await context.send(context.message.author.mention + " what is " + curr["character"] + " ?")
 
 @bot.event
 async def on_message(message):
     if(message.author != bot.user and "repeat" in message.content):
         await message.channel.send(message.content)
-    global waiting
-    if(waiting != "none" and message.author == waiting[0]):
-        if(message.content == waiting[1]):
-            await message.channel.send("bravo")
-        else:
-            await message.channel.send("raté, c'était " + waiting[1])
-        waiting = "none"
+
+    if(message.author in user_queue):
+        i = 0
+        while (user_queue[i] != message.author) :
+            i = i + 1
+        if(res_queue[i] != "none"):
+            if(message.content == "cheat" or message.content == res_queue[i]):
+                scores[i] = scores[i] + 1
+                curr = random.choice(kanas)
+                res_queue[i] = curr["romaji"]
+                await message.channel.send(message.author.mention + " bravo, what is " + curr["character"] + " ?")
+            else:
+                if(scores[i] > high_scores[i]):
+                    high_scores[i] = scores[i]
+                    await message.channel.send(message.author.mention + " raté, c'était '" + res_queue[i] + "'. New high score: " + str(scores[i]) + '!')
+                else:
+                    await message.channel.send(message.author.mention + " raté, c'était '" + res_queue[i] + "'. Score = " + str(scores[i]))
+                scores[i] = 0
+                res_queue[i] = "none"
 
     await bot.process_commands(message)
 
