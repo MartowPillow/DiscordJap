@@ -66,6 +66,7 @@ versus_queue = []
 res_versus = "none"
 char_versus = "none"
 lang_versus = "none"
+versus_scores = []
 
 @bot.command(name="refresh",help="loads new page of kanjis")
 async def refresh(context):
@@ -195,6 +196,14 @@ async def on_message(message):
 
                     if(len(versus_queue) == 1):
                         await message.channel.send(versus_queue[0].mention + " Tu as gagné ")
+                        if(versus_queue[0].name not in versus_scores):
+                            versus_scores.append([versus_queue[0].name, 1])
+                        else:
+                            j = 0
+                            while versus_queue[0].name not in versus_scores[j]:
+                                j = j + 1
+                            versus_scores[j][1] = versus_scores[j][1] + 1
+
                         i = 0
                         while (user_queue[i] != versus_queue[0]) :
                             i = i + 1
@@ -206,5 +215,9 @@ async def on_message(message):
                         versus_queue = []
 
     await bot.process_commands(message)
+
+@bot.command(name="scores",help="print scores")
+async def versus(context):
+    await context.send(str(versus_scores))
 
 bot.run(TOKEN)
