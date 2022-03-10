@@ -14,13 +14,13 @@ GUILD2 = "COOOOO"
 
 bot = commands.Bot(command_prefix='!')
 
-
+'''
 @bot.event
 async def on_error(event, *args, **kwargs):
     message = args[0] #Gets the message object
     logging.warning(traceback.format_exc()) #logs the error
     await bot.send_message(message.channel, "You caused an error!")
-
+'''
 
 @bot.command(name='start', help="starts the game")
 async def start(context):
@@ -67,6 +67,8 @@ res_versus = "none"
 char_versus = "none"
 lang_versus = "none"
 versus_scores = []
+best_versus = 0
+best_name_versus = "none"
 
 @bot.command(name="refresh",help="loads new page of kanjis")
 async def refresh(context):
@@ -117,6 +119,8 @@ async def versus(context):
     global res_versus
     global char_versus
     global lang_versus
+    global best_versus
+    global best_name_versus
     if(not context.message.author in versus_queue):
         if(context.message.author in user_queue):
             i = 0
@@ -128,6 +132,7 @@ async def versus(context):
             game.append("versus")
             user_queue.append(context.message.author)
             res_queue.append("none")
+            scores.append(0)
 
         versus_queue.append(context.message.author)
         if(res_versus == "none"):
@@ -135,6 +140,8 @@ async def versus(context):
             char_versus = curr["character"]
             lang_versus = curr["meaningsLanguage"]
             res_versus = curr["meanings"]
+            best_versus = 0
+            best_name_versus = "none"
         
     await context.send(context.message.author.mention + " what is " + char_versus + " ? (" + lang_versus + ")")
 
@@ -147,6 +154,8 @@ async def on_message(message):
     global versus_queue
     global lang_versus
     global char_versus
+    global best_name_versus
+    global best_versus
     if(message.author in user_queue):
         i = 0
         while (user_queue[i] != message.author) :
@@ -182,8 +191,14 @@ async def on_message(message):
                     scores[i] = 0
                     res_queue[i] = "none"
                     game[i] = "none"
+
+
             elif(game[i] == "versus"):
                 if(message.content == "cheat" or message.content in res_versus ):
+                    scores[i] = scores[i] + 1
+                    if(best_versus<scores[i]):
+                        best_versus = scores[i]
+                        best_name_versus = message.author
                     curr = random.choice(kanjis)
                     char_versus = curr["character"]
                     lang_versus = curr["meaningsLanguage"]
@@ -193,26 +208,26 @@ async def on_message(message):
                     await message.channel.send(message.author.mention + " raté, c'était " + str(res_versus) + ". Tu es éliminé" )
                     versus_queue.remove(message.author)
                     game[i] = "none"
+                    scores[i] = 0
 
-                    if(len(versus_queue) == 1):
-                        await message.channel.send(versus_queue[0].mention + " Tu as gagné ")
-                        if(versus_queue[0].name not in versus_scores):
-                            versus_scores.append([versus_queue[0].name, 1])
+                    if(len(versus_queue) == 0):
+                        await message.channel.send(best_name_versus.mention + " Tu as gagné ")
+                        if( best_name_versus.name not in versus_scores):
+                            versus_scores.append([ best_name_versus.name, 1])
                         else:
                             j = 0
-                            while versus_queue[0].name not in versus_scores[j]:
+                            while best_name_versus.name not in versus_scores[j]:
                                 j = j + 1
                             versus_scores[j][1] = versus_scores[j][1] + 1
 
                         i = 0
-                        while (user_queue[i] != versus_queue[0]) :
+                        while (user_queue[i] !=  best_name_versus) :
                             i = i + 1
                         game[i] = "none"
                         res_versus  = "none"
+                        scores[i] = 0
                         versus_queue = []
-                    elif(len(versus_queue)<1):
-                        res_versus  = "none"
-                        versus_queue = []
+
 
     await bot.process_commands(message)
 
