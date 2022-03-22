@@ -21,7 +21,7 @@ async def on_error(event, *args, **kwargs):
     logging.warning(traceback.format_exc()) #logs the error
     await bot.send_message(message.channel, "You caused an error!")
 '''
-
+'''
 @bot.command(name='start', help="starts the game")
 async def start(context):
     await context.send("c'est parti!" + str(context.message.author.mention) + '(' + str(context.message.author) + ')')
@@ -44,7 +44,7 @@ async def fetch(context, urltxt = "https://api.thecatapi.com/v1/images/search"):
     with urllib.request.urlopen(urltxt) as url:
         data = json.loads(url.read().decode())
         await context.send(data)
-
+'''
 kana_url = "https://localhost:7113/api/Kana"
 url = urllib.request.urlopen(kana_url)
 kanas = json.loads(url.read().decode())
@@ -133,6 +133,7 @@ async def versus(context):
             user_queue.append(context.message.author)
             res_queue.append("none")
             scores.append(0)
+            high_scores.append(0)
 
         versus_queue.append(context.message.author)
         if(res_versus == "none"):
@@ -212,7 +213,11 @@ async def on_message(message):
 
                     if(len(versus_queue) == 0):
                         await message.channel.send(best_name_versus.mention + " Tu as gagné ")
-                        if( best_name_versus.name not in versus_scores):
+                        flag = False
+                        for i in range(0,len(versus_scores)):
+                            if( best_name_versus.name == versus_scores[i][0]):
+                                flag = True
+                        if (flag == False or len(versus_scores) == 0):   
                             versus_scores.append([ best_name_versus.name, 1])
                         else:
                             j = 0
@@ -231,7 +236,7 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-@bot.command(name="scores",help="print scores")
+@bot.command(name="scores",help="print versus scores")
 async def versus(context):
     await context.send(str(versus_scores))
 
