@@ -237,7 +237,22 @@ async def on_message(message):
     await bot.process_commands(message)
 
 @bot.command(name="scores",help="print versus scores")
-async def versus(context):
-    await context.send(str(versus_scores))
+async def scores_command(context):
+    rep = ""
+    for score in versus_scores:
+        rep += score[0] + " : " + str(score[1]) + '\n'
+    if(rep == ""):
+        rep = "No scores yet."
+    await context.send(rep)
+
+@bot.command(name="score",help="print your solo highscore")
+async def score_command(context):
+    if(context.message.author in user_queue):
+        i = 0
+        while (user_queue[i] != context.message.author) :
+            i = i + 1
+        await context.send(str(user_queue[i].name) + " : " + str(high_scores[i]))
+    else:
+        await context.send("You have not played yet.")
 
 bot.run(TOKEN)
